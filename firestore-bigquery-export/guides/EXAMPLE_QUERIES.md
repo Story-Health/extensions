@@ -1,5 +1,5 @@
 These example queries are for use with the official Firebase Extension
-[_Export Collections to BigQuery_](https://github.com/firebase/extensions/tree/master/firestore-bigquery-export)
+[_Stream Firestore to BigQuery_](https://github.com/firebase/extensions/tree/master/firestore-bigquery-export)
 and its associated [`fs-bq-schema-views` script](https://github.com/firebase/extensions/blob/master/firestore-bigquery-export/guides/GENERATE_SCHEMA_VIEWS.md) (referred to as the "schema-views script").
 
 The queries use the following parameter values from your installation of the extension:
@@ -69,7 +69,7 @@ In this query, note the following:
 - The `last_login` column contains data that is stored in the `data`
   column of the raw changelog. The type conversion and view generation is
   performed for you by the
-  [_Export Collections to BigQuery_](https://github.com/firebase/extensions/tree/master/firestore-bigquery-export)
+  [_Stream Firestore to BigQuery_](https://github.com/firebase/extensions/tree/master/firestore-bigquery-export)
   extension.
 
 ### Example queries for an array
@@ -112,11 +112,23 @@ WHERE favorite_numbers_index = 0
 ### Remove stale data from your changelog table
 
 If you want to clean up data from your `changelog` table, use the following
-`DELETE` query to delete the rows that fall within a range of timestamps.
+`DELETE` query to delete all rows that fall within a certain time period,
+e.g. greater than 1 month old.
 
 ```sql
-/* The first WHERE clause is the start of the time range, and the second WHERE
-   clause is the end of the time range. The query below deletes every row in a
-   24-hour time frame on the 4th September, 2020. */
-DELETE FROM `[PROJECT ID].[DATASET ID].[CHANGELOG TABLE ID]` WHERE '2020-09-04 00:00:00' < timestamp AND '2020-09-05 00:00:00' > timestamp
+/* The query below deletes any rows below that are over one month old. */
+DELETE FROM `[PROJECT ID].[DATASET ID].[CHANGELOG TABLE ID]`
+WHERE (document_name, timestamp) IN
+(
+  WITH latest AS (
+    SELECT MAX(timestamp) as timestamp, document_name
+    FROM `[PROJECT ID].[DATASET ID].[CHANGELOG TABLE ID]`
+    GROUP BY document_name
+  )
+  SELECT (t.document_name, t.timestamp)
+  FROM `[PROJECT ID].[DATASET ID].[CHANGELOG TABLE ID]` AS t
+  JOIN latest  ON (t.document_name = latest.document_name )
+  WHERE t.timestamp != latest.timestamp
+  AND DATETIME(t.timestamp) < DATE_ADD(CURRENT_DATETIME(), INTERVAL -1 MONTH)
+)
 ```

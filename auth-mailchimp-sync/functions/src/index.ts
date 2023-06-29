@@ -31,8 +31,9 @@ try {
   logs.initError(err);
 }
 
-export const addUserToList = functions.handler.auth.user.onCreate(
-  async (user): Promise<void> => {
+export const addUserToList = functions.auth
+  .user()
+  .onCreate(async (user): Promise<void> => {
     logs.start();
 
     if (!mailchimp) {
@@ -65,11 +66,11 @@ export const addUserToList = functions.handler.auth.user.onCreate(
     } catch (err) {
       logs.errorAddUser(err);
     }
-  }
-);
+  });
 
-export const removeUserFromList = functions.handler.auth.user.onDelete(
-  async (user): Promise<void> => {
+export const removeUserFromList = functions.auth
+  .user()
+  .onDelete(async (user): Promise<void> => {
     logs.start();
 
     if (!mailchimp) {
@@ -84,10 +85,7 @@ export const removeUserFromList = functions.handler.auth.user.onDelete(
     }
 
     try {
-      const hashed = crypto
-        .createHash("md5")
-        .update(email)
-        .digest("hex");
+      const hashed = crypto.createHash("md5").update(email).digest("hex");
 
       logs.userRemoving(uid, hashed, config.mailchimpAudienceId);
       await mailchimp.delete(
@@ -98,5 +96,4 @@ export const removeUserFromList = functions.handler.auth.user.onDelete(
     } catch (err) {
       logs.errorRemoveUser(err);
     }
-  }
-);
+  });

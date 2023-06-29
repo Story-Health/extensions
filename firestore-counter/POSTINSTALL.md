@@ -19,9 +19,9 @@ match /databases/{database}/documents/pages/{page} {
 }
 ```
 
-#### Client samples for incrementing counter and retrieving its value
+#### Client/Admin samples for incrementing counter and retrieving its value
 
-##### Web Client
+##### Web Client (<v9 example)
 
 1.  Download and copy the [compiled client sample](https://github.com/firebase/extensions/blob/master/firestore-counter/clients/web/dist/sharded-counter.js) into your application project.
 
@@ -61,6 +61,59 @@ match /databases/{database}/documents/pages/{page} {
   </html>
   ```
 
+##### Web Client (v9+ example)
+
+```html
+<html>
+  <head> </head>
+  <body>
+    <script src="clients/web/dist/sharded-counter.js"></script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+
+      // Add Firebase products that you want to use
+      import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+      import {
+        getFirestore,
+        getDoc,
+        doc,
+        onSnapshot,
+      } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+      // Initialize Firebase
+      const firebaseApp = initializeApp({ projectId: "extensions-testing" });
+
+      // initializeApp(firebaseConfig);
+      const db = getFirestore(firebaseApp);
+
+
+      const docRef = doc(db, "pages", "hello-world");
+
+
+      // Initialize the sharded counter.
+      var views = new sharded.Counter(docRef, "stats.views");
+
+      // // This will increment a field "stats.views" of the "pages/hello-world" document by 3.
+      views.incrementBy(4).then($ => console.log("returning document >>>>", $));
+
+      // // Listen to locally consistent values
+      views.onSnapshot(snap => {
+        console.log("Locally consistent view of visits: " + snap.data());
+      });
+
+      //Alternatively if you don't mind counter delays, you can listen to the document directly.
+      onSnapshot(doc(db, "pages", "hello-world"), snap => {
+        console.log(
+          "Eventually consistent view of visits: " + snap.get("stats.views")
+        );
+      });
+    </script>
+  </body>
+</html>
+
+  ```
+
 ##### Android Client
 
 1. Follow the steps in [Add Firebase to your Android project](https://firebase.google.com/docs/android/setup) to use Firebase in your app.
@@ -77,7 +130,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 
 // somewhere in your app code initialize Firestore instance
-FirebaseFirestore db = FirebaseFirestore.getInstance();
+FirebaseFirestore db = admin.firestore.getInstance();
 // create reference to the collection and the document you wish to use 
 DocumentReference doc = db.collection("pages").document("hello-world");
 // initialize FirestoreShardedCounter with the document and the property which will hold the counter value
@@ -157,6 +210,37 @@ class ViewController: UIViewController {
   }
 }
 
+```
+
+
+##### Node.js Admin
+
+1. Follow the steps in [Add Firebase Admin SDK to your server](https://firebase.google.com/docs/admin/setup) to use Firebase in your app.
+
+2.  Download and copy the [Node.js Admin sample](https://github.com/firebase/extensions/blob/master/firestore-counter/clients/node/index.js) into your application project.
+
+```js
+  // Initialize Firebase.
+  const admin = require('firebase-admin');
+  admin.initializeApp();
+  const db = admin.firestore();
+
+  const Counter = require("./distributed_counter")
+
+  const visits = new Counter(db.collection("pages").doc("hello-world"), "visits")
+
+  // Increment the field "visits" of the document "pages/hello-world".
+  visits.incrementBy(1);
+
+  // Listen to locally consistent values.
+  visits.onSnapshot((snap) => {
+    console.log("Locally consistent view of visits: " + snap.data());
+  });
+
+  // Alternatively, if you don't mind counter delays, you can listen to the document directly.
+  db.collection("pages").doc("hello-world").onSnapshot((snap) => {
+    console.log("Eventually consistent view of visits: " + snap.get("visits"));
+  });
 ```
 
 #### Upgrading from v0.1.3 and earlier

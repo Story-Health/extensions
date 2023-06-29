@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
+import * as admin from "firebase-admin";
 import { create } from "handlebars";
 
 import { TemplateGroup, TemplateData, Attachment } from "./types";
 
 import {
   registeredPartial,
-  templateLoaded,
   noPartialAttachmentSupport,
+  checkingMissingTemplate,
+  foundMissingTemplate,
+  templatesLoaded,
 } from "./logs";
 
 const subjHandlebars = create();
@@ -31,12 +34,12 @@ const ampHandlebars = create();
 const attachmentsHandlebars = create();
 
 export default class Templates {
-  collection: FirebaseFirestore.CollectionReference;
+  collection: admin.firestore.CollectionReference;
   templateMap: { [name: string]: TemplateGroup };
   private ready: boolean;
   private waits: (() => void)[];
 
-  constructor(collection: FirebaseFirestore.CollectionReference) {
+  constructor(collection: admin.firestore.CollectionReference) {
     this.collection = collection;
     this.collection.onSnapshot(this.updateTemplates.bind(this));
     this.templateMap = {};
@@ -54,7 +57,7 @@ export default class Templates {
     });
   }
 
-  private updateTemplates(snap: FirebaseFirestore.QuerySnapshot) {
+  private updateTemplates(snap: admin.firestore.QuerySnapshot) {
     const all: TemplateData[] = snap.docs.map((doc) =>
       Object.assign({ name: doc.id }, doc.data())
     );
@@ -81,7 +84,7 @@ export default class Templates {
       registeredPartial(p.name);
     });
 
-    templates.forEach((t) => {
+    const loadedTemplates = templates.map((t) => {
       const tgroup: TemplateGroup = {};
       if (t.subject) {
         tgroup.subject = subjHandlebars.compile(t.subject, { noEscape: true });
@@ -104,11 +107,20 @@ export default class Templates {
 
       this.templateMap[t.name] = tgroup;
 
-      templateLoaded(t.name);
+      return t.name;
     });
+    templatesLoaded(loadedTemplates);
+
     this.ready = true;
     this.waits.forEach((wait) => wait());
   }
+
+  checkTemplateExists = (name) => {
+    return this.collection
+      .where("name", "==", name)
+      .get()
+      .then((t) => !t.empty);
+  };
 
   async render(
     name: string,
@@ -122,9 +134,16 @@ export default class Templates {
   }> {
     await this.waitUntilReady();
     if (!this.templateMap[name]) {
-      return Promise.reject(
-        new Error(`tried to render non-existent template '${name}'`)
-      );
+      //fallback, check if template does exist, results may be cached
+      checkingMissingTemplate(name);
+      const templateExists = this.checkTemplateExists(name);
+
+      if (!templateExists)
+        return Promise.reject(
+          new Error(`Tried to render non-existent template '${name}'`)
+        );
+
+      foundMissingTemplate(name);
     }
 
     const t = this.templateMap[name];

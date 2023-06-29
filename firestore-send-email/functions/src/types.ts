@@ -1,5 +1,18 @@
 import * as nodemailer from "nodemailer";
-
+import * as admin from "firebase-admin";
+export interface Config {
+  location: string;
+  mailCollection: string;
+  smtpConnectionUri?: string;
+  smtpPassword?: string;
+  defaultFrom: string;
+  defaultReplyTo?: string;
+  usersCollection?: string;
+  templatesCollection?: string;
+  testing?: boolean;
+  TTLExpireType?: string;
+  TTLExpireValue?: number;
+}
 export interface Attachment {
   filename?: string;
   content?: string;
@@ -34,9 +47,9 @@ export interface TemplateData {
 
 export interface QueuePayload {
   delivery?: {
-    startTime: FirebaseFirestore.Timestamp;
-    endTime: FirebaseFirestore.Timestamp;
-    leaseExpireTime: FirebaseFirestore.Timestamp;
+    startTime: admin.firestore.Timestamp;
+    endTime: admin.firestore.Timestamp;
+    leaseExpireTime: admin.firestore.Timestamp;
     state: "PENDING" | "PROCESSING" | "RETRY" | "SUCCESS" | "ERROR";
     attempts: number;
     error?: string;

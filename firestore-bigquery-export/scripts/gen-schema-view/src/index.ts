@@ -41,8 +41,12 @@ function collect(value, previous) {
   return previous.concat([value]);
 }
 
+const packageJson = require("../package.json");
+
 program
   .name("gen-schema-views")
+  .description(packageJson.description)
+  .version(packageJson.version)
   .option(
     "--non-interactive",
     "Parse all input from command line flags instead of prompting the caller.",
@@ -116,10 +120,12 @@ async function run(): Promise<number> {
   process.env.GOOGLE_CLOUD_PROJECT = config.projectId;
 
   // Initialize Firebase
-  firebase.initializeApp({
-    credential: firebase.credential.applicationDefault(),
-    databaseURL: `https://${config.projectId}.firebaseio.com`,
-  });
+  if (!firebase.apps.length) {
+    firebase.initializeApp({
+      credential: firebase.credential.applicationDefault(),
+      databaseURL: `https://${config.projectId}.firebaseio.com`,
+    });
+  }
 
   // @ts-ignore string not assignable to enum
   if (Object.keys(config.schemas).length === 0) {
@@ -156,12 +162,8 @@ async function parseConfig(): Promise<CliConfig> {
       schemas: readSchemas(program.schemaFiles),
     };
   }
-  const {
-    project,
-    dataset,
-    tableNamePrefix,
-    schemaFiles,
-  } = await inquirer.prompt(questions);
+  const { project, dataset, tableNamePrefix, schemaFiles } =
+    await inquirer.prompt(questions);
   return {
     projectId: project,
     datasetId: dataset,

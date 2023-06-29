@@ -1,3 +1,27 @@
+## Version 0.2.7
+
+feature - bump to nodejs16
+
+## Version 0.2.6
+
+fixed - web client now uses the document sub collection for processing shards
+
+fixed - ts errors and updated packages
+
+feature - upgrade extensions to the latest firebase-admin sdk
+
+## Version 0.2.5
+
+fixed - generate correct `package-lock.json` files after `lerna bootstrap` (#779)
+
+fixed - update validate workflow to use node14
+
+## Version 0.2.4
+
+feature - Add Node.js Admin SDK implementation (#687)
+
+feature - add Taiwan and Singapore Cloud Function locations (#729)
+
 ## Version 0.2.3
 
 feature - added Warsaw (europe-central2) location (#677)

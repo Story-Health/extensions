@@ -1,3 +1,27 @@
+## Version 0.1.11
+
+feature - bump to nodejs16
+
+## Version 0.1.10
+
+No changes.
+
+## Version 0.1.9
+
+feature - upgrade extensions to the latest firebase-admin sdk
+
+## Version 0.1.8
+
+fixed - generate correct `package-lock.json` files after `lerna bootstrap` (#779)
+
+fixed - update validate workflow to use node14
+
+## Version 0.1.7
+
+fixed - changed Bitly access token configuration from string type to secret type (#752)
+
+feature - add Taiwan and Singapore Cloud Function locations (#729)
+
 ## Version 0.1.6
 
 feature - added Warsaw (europe-central2) location (#677)
